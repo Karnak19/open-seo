@@ -26,7 +26,7 @@ const channelSchema = z
   .optional()
   .default("organic_search")
   .describe(
-    "organic_search keeps visits OneDollarStats classifies as Organic Search (Google, Bing, DuckDuckGo, and others). all includes every visit.",
+    "organic_search keeps visits referred by a search engine (Google, Bing, DuckDuckGo, and others). all includes every visit.",
   );
 
 const commonInputSchema = {
@@ -34,7 +34,6 @@ const commonInputSchema = {
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),
   limit: z.number().int().min(1).max(1_000).optional().default(100),
-  offset: z.number().int().min(0).optional().default(0),
 } as const;
 
 const reportOutputSchema = analyticsEnvelopeSchema({
@@ -42,7 +41,7 @@ const reportOutputSchema = analyticsEnvelopeSchema({
   request: looseObjectOutputSchema,
   rowCount: z.number(),
   rows: z.array(z.record(z.string(), z.unknown())),
-  pageInfo: looseObjectOutputSchema,
+  truncated: z.boolean(),
   warnings: z.array(z.string()),
 });
 
@@ -70,6 +69,7 @@ type ProjectContext = {
 const SETTINGS_CODES = new Set([
   "onedollarstats_not_connected",
   "onedollarstats_key_rejected",
+  "onedollarstats_site_inaccessible",
 ]);
 
 function errorResponse(
@@ -105,16 +105,16 @@ function rangeNote(result: {
 
 function channelNote(channel: string) {
   return channel === "organic_search"
-    ? " Filtered to OneDollarStats' Organic Search channel; pass channel=all for every visit."
+    ? " Filtered to visits referred by a search engine; pass channel=all for every visit."
     : "";
 }
 
 function reportText(label: string, result: OneDollarStatsReportResult) {
   const range = result.request.resolvedDateRange;
-  const paginate = result.pageInfo.hasMore
-    ? " More rows are available; call again with offset to page through them."
+  const truncatedNote = result.truncated
+    ? " More rows exist beyond the limit; raise limit or narrow the date range."
     : "";
-  const summary = `${label} (OneDollarStats: ${result.source.siteId}): ${result.rowCount} rows for ${range.startDate} through ${range.endDate}.${rangeNote(result)}${channelNote(result.request.channel)}${paginate}`;
+  const summary = `${label} (OneDollarStats: ${result.source.siteId}): ${result.rowCount} rows for ${range.startDate} through ${range.endDate}.${rangeNote(result)}${channelNote(result.request.channel)}${truncatedNote}`;
   if (result.rows.length === 0) return summary;
   const columns = [...result.request.dimensions, ...result.request.metrics].map(
     (key) => ({
@@ -194,7 +194,7 @@ export const getOneDollarStatsOrganicOverviewTool = {
   name: "get_onedollarstats_organic_overview",
   config: {
     title: "Get OneDollarStats organic overview",
-    description: `Answer whether organic traffic is improving from the project's connected OneDollarStats site: visits, visitors, pageviews, bounce rate, and average visit duration, an equal-length previous-period comparison, and a daily visits trend (monthly for ranges over 180 days). Defaults to the last 28 complete days. ${SCOPE_NOTE}`,
+    description: `Answer whether organic traffic is improving from the project's connected OneDollarStats site: visits, visitors, pageviews, bounce rate, and average visit duration from search-engine referrers, an equal-length previous-period comparison, and a daily visits trend (monthly for ranges over 180 days). Defaults to the last 28 complete days. ${SCOPE_NOTE}`,
     inputSchema: overviewInputSchema,
     outputSchema: overviewOutputSchema,
     annotations,
@@ -213,53 +213,35 @@ export const getOneDollarStatsOrganicOverviewTool = {
   }),
 };
 
-const landingPagesInputSchema = z.strictObject({
+const pagesInputSchema = z.strictObject({
   ...commonInputSchema,
   channel: channelSchema,
 });
-type LandingPagesArgs = z.infer<typeof landingPagesInputSchema>;
-
-export const getOneDollarStatsLandingPagesTool = {
-  name: "get_onedollarstats_landing_pages",
-  config: {
-    title: "Get OneDollarStats landing pages",
-    description: `Read entry pages with visits and visitors from the project's connected OneDollarStats site. Organic Search is the default, so the rows line up with Search Console pages; set channel to all for every entry. ${SCOPE_NOTE}`,
-    inputSchema: landingPagesInputSchema,
-    outputSchema: reportOutputSchema,
-    annotations,
-  },
-  handler: createReportHandler<LandingPagesArgs>("Landing pages", (args) => ({
-    ...args,
-    kind: "landing_pages",
-  })),
-};
-
-const pagePerformanceInputSchema = z.strictObject(commonInputSchema);
-type PagePerformanceArgs = z.infer<typeof pagePerformanceInputSchema>;
+type PagesArgs = z.infer<typeof pagesInputSchema>;
 
 export const getOneDollarStatsPagePerformanceTool = {
   name: "get_onedollarstats_page_performance",
   config: {
     title: "Get OneDollarStats page performance",
-    description: `Read pageviews, visitors, and visits per page from the project's connected OneDollarStats site, across all traffic. For organic entry pages, use get_onedollarstats_landing_pages. ${SCOPE_NOTE}`,
-    inputSchema: pagePerformanceInputSchema,
+    description: `Read pageviews, visitors, and visits per page from the project's connected OneDollarStats site, across all traffic by default; set channel to organic_search for pages viewed during search-engine visits. ${SCOPE_NOTE}`,
+    inputSchema: pagesInputSchema,
     outputSchema: reportOutputSchema,
     annotations,
   },
-  handler: createReportHandler<PagePerformanceArgs>(
-    "Page performance",
-    (args) => ({ ...args, kind: "page_performance" }),
-  ),
+  handler: createReportHandler<PagesArgs>("Page performance", (args) => ({
+    ...args,
+    kind: "pages",
+  })),
 };
 
 const trafficSourcesInputSchema = z.strictObject({
   ...commonInputSchema,
   breakdown: z
-    .enum(["source", "channel"])
+    .enum(["referrer", "utm_source"])
     .optional()
-    .default("source")
+    .default("referrer")
     .describe(
-      "source lists referring sites; channel groups visits the way OneDollarStats does (Organic Search, Direct, Referral, and so on).",
+      "referrer lists referring domains, with (direct) for visits without one; utm_source groups by the visit's UTM source parameter.",
     ),
   channel: channelSchema,
 });
@@ -269,7 +251,7 @@ export const getOneDollarStatsTrafficSourcesTool = {
   name: "get_onedollarstats_traffic_sources",
   config: {
     title: "Get OneDollarStats traffic sources",
-    description: `Compare where visits come from on the project's connected OneDollarStats site, by referring source (visits, visitors, and pageviews) or by channel (same metrics). The source breakdown can be limited to Organic Search; the channel breakdown always covers every visit. ${SCOPE_NOTE}`,
+    description: `Compare where visits come from on the project's connected OneDollarStats site: by referring domain (visits, visitors, and pageviews, with (direct) for no referrer) or by UTM source. The referrer breakdown can be limited to search engines; the UTM breakdown can be limited to visits referred by them. ${SCOPE_NOTE}`,
     inputSchema: trafficSourcesInputSchema,
     outputSchema: reportOutputSchema,
     annotations,
@@ -281,9 +263,9 @@ export const getOneDollarStatsTrafficSourcesTool = {
       startDate: args.startDate,
       endDate: args.endDate,
       limit: args.limit,
-      offset: args.offset,
       channel: args.channel,
-      kind: args.breakdown === "channel" ? "channels" : "traffic_sources",
+      breakdown: args.breakdown,
+      kind: "sources",
     }),
   ),
 };

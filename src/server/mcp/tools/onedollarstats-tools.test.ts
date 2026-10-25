@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OneDollarStatsError } from "@/server/lib/onedollarstatsErrors";
 import {
-  getOneDollarStatsLandingPagesTool,
+  getOneDollarStatsPagePerformanceTool,
   getOneDollarStatsTrafficSourcesTool,
 } from "./onedollarstats-tools";
 import { makeToolContext, textContent } from "./tool-test-support";
@@ -29,7 +29,7 @@ vi.mock("@/server/features/projects/services/ProjectService", () => ({
 }));
 
 const toolContext = makeToolContext();
-const page = { projectId: "project_1", limit: 100, offset: 0 };
+const page = { projectId: "project_1", limit: 100 };
 
 describe("OneDollarStats MCP tools", () => {
   beforeEach(() => {
@@ -38,48 +38,51 @@ describe("OneDollarStats MCP tools", () => {
       status: "ok",
       source: { provider: "onedollarstats", siteId: "example.com" },
       request: {
-        reportKind: "channels",
+        reportKind: "sources",
         resolvedDateRange: { startDate: "2026-10-01", endDate: "2026-10-28" },
         channel: "all",
-        dimensions: ["channel"],
+        dimensions: ["source"],
         metrics: ["visits"],
       },
       rowCount: 1,
-      rows: [{ channel: "Organic Search", visits: 9 }],
-      pageInfo: { limit: 100, offset: 0, hasMore: false },
+      rows: [{ source: "www.google.com", visits: 9 }],
+      truncated: false,
       warnings: [],
     });
   });
 
-  it("maps the channel breakdown to the unfiltered channel report", async () => {
+  it("maps the UTM breakdown to the sources report over the referrer dimension", async () => {
     const result = await getOneDollarStatsTrafficSourcesTool.handler(
-      { ...page, breakdown: "channel", channel: "organic_search" },
+      { ...page, breakdown: "utm_source", channel: "organic_search" },
       toolContext,
     );
 
     expect(mocks.runReport).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: "channels" }),
+      expect.objectContaining({
+        kind: "sources",
+        breakdown: "utm_source",
+      }),
     );
-    expect(textContent(result)).toContain("Organic Search");
+    expect(textContent(result)).toContain("www.google.com");
   });
 
   it("points connection problems at the project's integration settings", async () => {
     mocks.runReport.mockRejectedValue(
       new OneDollarStatsError(
-        "onedollarstats_key_rejected",
-        "OneDollarStats rejected the saved API key.",
+        "onedollarstats_site_inaccessible",
+        "OneDollarStats denied access to this site.",
       ),
     );
 
-    const result = await getOneDollarStatsLandingPagesTool.handler(
-      { ...page, channel: "organic_search" },
+    const result = await getOneDollarStatsPagePerformanceTool.handler(
+      { ...page, channel: "all" },
       toolContext,
     );
 
     expect(result.structuredContent).toMatchObject({
       status: "error",
       error: {
-        code: "onedollarstats_key_rejected",
+        code: "onedollarstats_site_inaccessible",
         actionUrl: "https://open-seo.test/p/project_1/settings/integrations",
       },
     });

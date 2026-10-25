@@ -55,7 +55,6 @@ import {
   getSearchOpportunitiesTool,
 } from "@/server/mcp/tools/google-analytics-tools";
 import {
-  getOneDollarStatsLandingPagesTool,
   getOneDollarStatsOrganicOverviewTool,
   getOneDollarStatsPagePerformanceTool,
   getOneDollarStatsTrafficSourcesTool,
@@ -464,9 +463,6 @@ export function buildSamMcpTools(
     ),
     get_onedollarstats_organic_overview: adaptObjectTool(
       getOneDollarStatsOrganicOverviewTool,
-    ),
-    get_onedollarstats_landing_pages: adaptObjectTool(
-      getOneDollarStatsLandingPagesTool,
     ),
     get_onedollarstats_page_performance: adaptObjectTool(
       getOneDollarStatsPagePerformanceTool,

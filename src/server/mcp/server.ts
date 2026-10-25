@@ -56,7 +56,6 @@ import {
   getSearchOpportunitiesTool,
 } from "@/server/mcp/tools/google-analytics-tools";
 import {
-  getOneDollarStatsLandingPagesTool,
   getOneDollarStatsOrganicOverviewTool,
   getOneDollarStatsPagePerformanceTool,
   getOneDollarStatsTrafficSourcesTool,
@@ -354,7 +353,6 @@ export function createOpenSeoMcpServer(
   register(getGoogleAnalyticsSiteSearchTool);
   register(getGoogleAnalyticsAudienceBreakdownTool);
   register(getOneDollarStatsOrganicOverviewTool);
-  register(getOneDollarStatsLandingPagesTool);
   register(getOneDollarStatsPagePerformanceTool);
   register(getOneDollarStatsTrafficSourcesTool);
   register(runSiteAuditTool);

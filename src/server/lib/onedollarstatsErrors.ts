@@ -2,6 +2,7 @@ type OneDollarStatsErrorCode =
   | "validation_error"
   | "onedollarstats_not_connected"
   | "onedollarstats_key_rejected"
+  | "onedollarstats_site_inaccessible"
   | "onedollarstats_rate_limited"
   | "onedollarstats_unreachable"
   | "onedollarstats_malformed_response";

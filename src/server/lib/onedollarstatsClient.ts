@@ -30,7 +30,9 @@ const queryResponseSchema = z.object({
     z.object({
       // Metric values in the requested order; null when not computable.
       metrics: z.array(z.union([z.number(), z.null()])),
-      dimensions: z.array(z.string()).optional(),
+      // Dimension values in the requested order. A visit with no referrer
+      // reports a null referrer dimension, so any dimension can be null.
+      dimensions: z.array(z.union([z.string(), z.null()])).optional(),
     }),
   ),
 });
@@ -38,10 +40,19 @@ const queryResponseSchema = z.object({
 type OneDollarStatsQueryResult = z.infer<typeof queryResponseSchema>;
 
 function statusError(status: number): OneDollarStatsError {
-  if (status === 401 || status === 403) {
+  // The observed contract: an invalid key answers 401, a key without access
+  // to the requested site 403, so the two stay distinguishable.
+  if (status === 401) {
     return new OneDollarStatsError(
       "onedollarstats_key_rejected",
       "OneDollarStats rejected the saved API key.",
+      status,
+    );
+  }
+  if (status === 403) {
+    return new OneDollarStatsError(
+      "onedollarstats_site_inaccessible",
+      "OneDollarStats denied access to this site. Check that the hostname matches a site in your OneDollarStats account.",
       status,
     );
   }

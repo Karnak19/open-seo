@@ -32,25 +32,29 @@ it, connect the site again from a browser in the other time zone.
 
 ## What OpenSEO reads
 
-| Where                                 | What                                                                                      |
-| ------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Dashboard, Organic traffic            | Visits, visitors, pageviews and bounce rate from search engines, last 28 complete days.   |
-| `get_onedollarstats_organic_overview` | The same totals for any date range against the previous period, with a visits trend.      |
-| `get_onedollarstats_landing_pages`    | Entry pages with visits and visitors.                                                     |
-| `get_onedollarstats_page_performance` | Pageviews, visitors and visits per page, across all traffic.                              |
-| `get_onedollarstats_traffic_sources`  | Visits by referring source, or by channel (Organic Search, Direct, Referral, and others). |
+| Where                                 | What                                                                                    |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| Dashboard, Organic traffic            | Visits, visitors, pageviews and bounce rate from search engines, last 28 complete days. |
+| `get_onedollarstats_organic_overview` | The same totals for any date range against the previous period, with a visits trend.    |
+| `get_onedollarstats_page_performance` | Pageviews, visitors and visits per page, across all traffic or only search visits.      |
+| `get_onedollarstats_traffic_sources`  | Visits by referring domain (with `(direct)` for none) or by UTM source.                 |
 
-Organic traffic is OneDollarStats' own **Organic Search** channel, so the
-numbers match the OneDollarStats dashboard. The MCP tools take
-`channel: "all"` to include every visit, and the chat uses the same tools. The
-trend is daily, or monthly for ranges over 180 days.
+Organic traffic means visits referred by a search engine: Google, Bing,
+DuckDuckGo, Ecosia, Yandex, Baidu, Yahoo, Qwant, Startpage, Brave, Naver,
+Seznam, MSN and their regional subdomains. OpenSEO applies this
+classification itself, so it is the same definition across providers; a
+visitor who reached the site from two different sources counts once per
+source in the organic totals, and utm-tagged search visits are only organic
+when the referrer is a search engine too. The MCP tools take `channel: "all"`
+for every visit, and the chat uses the same tools. The trend is daily, or
+monthly for ranges over 180 days.
 
 ## Troubleshooting
 
 - **"OneDollarStats rejected the saved API key"**: the key was revoked or
   rotated. Enter the new one in the OneDollarStats card.
-- **The card shows no traffic but the site has some**: check that the hostname
-  matches the site in OneDollarStats exactly, including or excluding `www.` the
-  same way, and reconnect.
+- **"OneDollarStats denied access to this site"**: the key works, but not for
+  this hostname. Check that it matches the site in your OneDollarStats account
+  exactly, including or excluding `www.` the same way, and reconnect.
 - **The card says the saved key can no longer be read**: the deployment's
   `BETTER_AUTH_SECRET` changed. Add the key again.

@@ -67,12 +67,12 @@ describe("createOneDollarStatsClient", () => {
     });
   });
 
-  it("maps an invalid key, rate limiting and other statuses to typed errors", async () => {
+  it("maps an invalid key, a blocked site and rate limiting to typed errors", async () => {
     const client = createOneDollarStatsClient({ apiKey: "ods_key_1" });
 
     for (const [status, code] of [
       [401, "onedollarstats_key_rejected"],
-      [403, "onedollarstats_key_rejected"],
+      [403, "onedollarstats_site_inaccessible"],
       [429, "onedollarstats_rate_limited"],
       [500, "onedollarstats_unreachable"],
     ] as const) {
@@ -109,17 +109,21 @@ describe("createOneDollarStatsClient", () => {
     });
   });
 
-  it("keeps null metric values instead of turning them into zeros", async () => {
+  it("keeps null metric and dimension values instead of failing on them", async () => {
     mocks.fetch.mockResolvedValue(
-      Response.json({ results: [{ metrics: [5, null] }] }),
+      Response.json({
+        results: [{ metrics: [5, null], dimensions: [null] }],
+      }),
     );
     const client = createOneDollarStatsClient({ apiKey: "ods_key_1" });
 
     const result = await client.runQuery("example.com", {
       metrics: ["visits", "bounce_rate"],
       dateRange: "7d",
+      dimensions: ["visit:referrer"],
     });
 
     expect(result.results[0]?.metrics).toEqual([5, null]);
+    expect(result.results[0]?.dimensions).toEqual([null]);
   });
 });
