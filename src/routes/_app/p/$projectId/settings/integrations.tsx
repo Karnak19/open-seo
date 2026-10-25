@@ -2,6 +2,7 @@ import { queryClient } from "@/client/tanstack-db/queryClient";
 import { googleConnectionOptions } from "@/client/features/integrations/googleProviders";
 import { createFileRoute } from "@tanstack/react-router";
 import { GoogleConnectionCard } from "@/client/features/integrations/GoogleConnectionCard";
+import { OneDollarStatsConnectionCard } from "@/client/features/integrations/OneDollarStatsConnectionCard";
 import { CrawlerAccessSettings } from "@/client/features/settings/CrawlerAccessSettings";
 import { IndexNowSettings } from "@/client/features/settings/IndexNowSettings";
 
@@ -34,6 +35,10 @@ function ProjectIntegrationsRoute() {
 
       <section id="google-analytics" className="scroll-mt-6">
         <GoogleConnectionCard provider="ga4" projectId={projectId} />
+      </section>
+
+      <section id="onedollarstats" className="scroll-mt-6">
+        <OneDollarStatsConnectionCard projectId={projectId} />
       </section>
 
       <IndexNowSettings projectId={projectId} />

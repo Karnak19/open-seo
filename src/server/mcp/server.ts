@@ -55,6 +55,12 @@ import {
   getGoogleAnalyticsTrafficAcquisitionTool,
   getSearchOpportunitiesTool,
 } from "@/server/mcp/tools/google-analytics-tools";
+import {
+  getOneDollarStatsLandingPagesTool,
+  getOneDollarStatsOrganicOverviewTool,
+  getOneDollarStatsPagePerformanceTool,
+  getOneDollarStatsTrafficSourcesTool,
+} from "@/server/mcp/tools/onedollarstats-tools";
 import { createProjectTool } from "@/server/mcp/tools/create-project";
 import {
   listGoogleAnalyticsPropertiesTool,
@@ -347,6 +353,10 @@ export function createOpenSeoMcpServer(
   register(getGoogleAnalyticsEcommercePerformanceTool);
   register(getGoogleAnalyticsSiteSearchTool);
   register(getGoogleAnalyticsAudienceBreakdownTool);
+  register(getOneDollarStatsOrganicOverviewTool);
+  register(getOneDollarStatsLandingPagesTool);
+  register(getOneDollarStatsPagePerformanceTool);
+  register(getOneDollarStatsTrafficSourcesTool);
   register(runSiteAuditTool);
   register(listSiteAuditsTool);
   register(deleteSiteAuditTool);

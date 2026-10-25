@@ -7,6 +7,8 @@ import { getAuthMode } from "@/lib/auth-mode";
 import { AppError } from "@/server/lib/errors";
 import {
   ga4Connections,
+  oneDollarStatsConnections,
+  oneDollarStatsInstances,
   gscConnections,
   organization,
   organizationActivationState,
@@ -137,6 +139,14 @@ async function mergeLegacyWorkspaces() {
       .update(ga4Connections)
       .set(repointToShared)
       .where(inArray(ga4Connections.organizationId, legacyIds)),
+    tx
+      .update(oneDollarStatsInstances)
+      .set(repointToShared)
+      .where(inArray(oneDollarStatsInstances.organizationId, legacyIds)),
+    tx
+      .update(oneDollarStatsConnections)
+      .set(repointToShared)
+      .where(inArray(oneDollarStatsConnections.organizationId, legacyIds)),
     ...(activationRows.length > 0
       ? [
           tx

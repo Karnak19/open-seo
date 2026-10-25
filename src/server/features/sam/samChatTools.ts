@@ -55,6 +55,12 @@ import {
   getSearchOpportunitiesTool,
 } from "@/server/mcp/tools/google-analytics-tools";
 import {
+  getOneDollarStatsLandingPagesTool,
+  getOneDollarStatsOrganicOverviewTool,
+  getOneDollarStatsPagePerformanceTool,
+  getOneDollarStatsTrafficSourcesTool,
+} from "@/server/mcp/tools/onedollarstats-tools";
+import {
   findSerpCompetitorsTool,
   getGoogleBusinessQuestionsTool,
   getKeywordMetricsTool,
@@ -455,6 +461,18 @@ export function buildSamMcpTools(
     ),
     get_google_analytics_audience_breakdown: adaptObjectTool(
       getGoogleAnalyticsAudienceBreakdownTool,
+    ),
+    get_onedollarstats_organic_overview: adaptObjectTool(
+      getOneDollarStatsOrganicOverviewTool,
+    ),
+    get_onedollarstats_landing_pages: adaptObjectTool(
+      getOneDollarStatsLandingPagesTool,
+    ),
+    get_onedollarstats_page_performance: adaptObjectTool(
+      getOneDollarStatsPagePerformanceTool,
+    ),
+    get_onedollarstats_traffic_sources: adaptObjectTool(
+      getOneDollarStatsTrafficSourcesTool,
     ),
     run_site_audit: adaptTool(runSiteAuditTool),
     get_audit_status: waitingAuditStatusTool(adaptTool),

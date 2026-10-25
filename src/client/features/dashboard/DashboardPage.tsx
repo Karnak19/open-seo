@@ -25,6 +25,7 @@ import {
   GscCard,
 } from "@/client/features/dashboard/DashboardCards";
 import { Ga4Card } from "@/client/features/dashboard/Ga4Card";
+import { OneDollarStatsCard } from "@/client/features/dashboard/OneDollarStatsCard";
 import { WorkspaceMergeBanner } from "@/client/features/dashboard/WorkspaceMergeBanner";
 import { QueryError } from "@/client/components/QueryState";
 import {
@@ -93,6 +94,7 @@ export function DashboardPage({
   const showBacklinks = activation.domain !== null;
   const gscConnected = activation.gsc.connected;
   const ga4Connected = activation.ga4.connected;
+  const odsConnected = activation.oneDollarStats.connected;
 
   // Search Console always renders: connected shows the report, otherwise the
   // connect pitch. It sits ahead of the optional GA4 pitch.
@@ -119,7 +121,18 @@ export function DashboardPage({
         />
       ),
     },
-    ...(ga4Connected || !activation.ga4.cardDismissedAt
+    ...(odsConnected
+      ? [
+          {
+            key: "onedollarstats",
+            hasData: true,
+            node: <OneDollarStatsCard projectId={projectId} />,
+          },
+        ]
+      : []),
+    // A project that reads analytics from OneDollarStats doesn't need the GA4
+    // pitch.
+    ...(ga4Connected || (!odsConnected && !activation.ga4.cardDismissedAt)
       ? [
           {
             key: "ga4",

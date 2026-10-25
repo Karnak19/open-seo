@@ -348,6 +348,25 @@ async function buildInventory(db: Db, user: UserRow) {
       schema.ga4Connections,
       eq(schema.ga4Connections.connectedByUserId, user.id),
     ),
+    // Includes connections that cascade away with the user's OneDollarStats
+    // API key.
+    onedollarstats_connections: await db.$count(
+      schema.oneDollarStatsConnections,
+      or(
+        eq(schema.oneDollarStatsConnections.connectedByUserId, user.id),
+        inArray(
+          schema.oneDollarStatsConnections.instanceId,
+          db
+            .select({ id: schema.oneDollarStatsInstances.id })
+            .from(schema.oneDollarStatsInstances)
+            .where(eq(schema.oneDollarStatsInstances.savedByUserId, user.id)),
+        ),
+      ),
+    ),
+    onedollarstats_instances: await db.$count(
+      schema.oneDollarStatsInstances,
+      eq(schema.oneDollarStatsInstances.savedByUserId, user.id),
+    ),
     api_keys: await db.$count(
       schema.apikey,
       eq(schema.apikey.referenceId, user.id),
@@ -537,6 +556,15 @@ async function erasePostgres(db: Db, user: UserRow, organizationIds: string[]) {
     await tx
       .delete(schema.ga4Connections)
       .where(eq(schema.ga4Connections.connectedByUserId, user.id));
+    // A OneDollarStats instance holds the API key its saver last entered, so
+    // it goes with them, along with every project connection that reads
+    // through it.
+    await tx
+      .delete(schema.oneDollarStatsConnections)
+      .where(eq(schema.oneDollarStatsConnections.connectedByUserId, user.id));
+    await tx
+      .delete(schema.oneDollarStatsInstances)
+      .where(eq(schema.oneDollarStatsInstances.savedByUserId, user.id));
     // apikey.reference_id mirrors the plugin's polymorphic schema and has no
     // user FK, so keys don't cascade with the user row.
     await tx
